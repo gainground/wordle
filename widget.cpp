@@ -239,3 +239,61 @@ void Widget::endGame()
     ui->checkButton->setEnabled(false);
     loadRecords();
 }
+
+void Widget::on_gameMenuButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(0);
+    ui->gameMenuButton->setChecked(true);
+    ui->recordsMenuButton->setChecked(false);
+}
+
+void Widget::on_recordsMenuButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->recordsMenuButton->setChecked(true);
+    ui->gameMenuButton->setChecked(false);
+    loadRecords();
+}
+
+void Widget::on_newGameButton_clicked()
+{
+    if (mGameActive) {
+        // если игра активна, завершаем её и сохраняем счет
+        endGame();
+    }
+
+    startNewGame();
+}
+
+void Widget::on_checkButton_clicked()
+{
+    if (!mGameActive || mWaitingForContinue) return;
+
+    QString word = ui->wordInput->text().toLower();
+
+    if (word.isEmpty()) {
+        return;
+    }
+
+    ui->wordInput->clear();
+    ui->logText->append("player: " + word);
+    checkWord(word);
+}
+
+void Widget::keyPressEvent(QKeyEvent *event)
+{
+    if (mWaitingForContinue) {
+        if (event->text() == "y" || event->text() == "Y" ||
+            event->text() == "н" || event->text() == "Н") {
+            mWaitingForContinue = false;
+            startNewGame();  // продолңаем игру с имеюәимся счетом
+        }
+        else if (event->text() == "n" || event->text() == "N" ||
+                 event->text() == "т" || event->text() == "Т") {
+            mWaitingForContinue = false;
+            ui->logText->append(QString("game: Вы заработали %1 баллов.").arg(mTotalScore));
+            endGame();  // обнуляемся
+        }
+    }
+    QWidget::keyPressEvent(event);
+}
