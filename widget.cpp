@@ -139,3 +139,103 @@ void Widget::loadRecords()
         }
     }
 }
+
+void Widget::startNewGame()
+{
+    if (mWordsList.isEmpty()) return;
+
+    int randomIndex = QRandomGenerator::global()->bounded(mWordsList.size());
+    mSecretWord = mWordsList[randomIndex];
+
+    mAttempts = 0;
+    mGameActive = true;
+    mWaitingForContinue = false;
+
+    // активация ввода
+    ui->wordInput->setEnabled(true);
+    ui->checkButton->setEnabled(true);
+    ui->wordInput->clear();
+    ui->wordInput->setFocus();
+
+    // рестарт
+    ui->logText->clear();
+    ui->logText->append("game: Загаданное слово: ****");
+}
+
+void Widget::checkWord(const QString& word)
+{
+    if (word.length() != 4) {
+        ui->logText->append("game: Слово должно быть длиной 4 буквы!");
+        return;
+    }
+
+    mAttempts++;
+
+    QString mask = "____";
+    QStringList guessedLettersList;
+
+    // проверка букв, если они на своих местах
+    for (int i = 0; i < 4; i++) {
+        if (word[i] == mSecretWord[i]) {
+            mask[i] = word[i];
+            QString letter = QString(word[i]);
+            if (!guessedLettersList.contains(letter)) {
+                guessedLettersList.append(letter);
+            }
+        }
+    }
+
+    // проверка букв, если они не на своих местах
+    for (int i = 0; i < 4; i++) {
+        if (word[i] != mSecretWord[i] && mSecretWord.contains(word[i])) {
+            QString letter = QString(word[i]);
+            if (!guessedLettersList.contains(letter)) {
+                guessedLettersList.append(letter);
+            }
+        }
+    }
+
+    if (guessedLettersList.isEmpty()) {
+        ui->logText->append("game: Отгаданные буквы: -");
+    } else {
+        ui->logText->append("game: Отгаданные буквы: " + guessedLettersList.join(", "));
+    }
+    ui->logText->append("game: Слово: " + mask);
+
+    if (word == mSecretWord) {
+        int points = 0;
+        switch(mAttempts) {
+            case 1: points = 5; break;
+            case 2: points = 4; break;
+            case 3: points = 3; break;
+            case 4: points = 2; break;
+            case 5: points = 1; break;
+        }
+
+        mTotalScore += points;
+        ui->scoreLabel->setText(QString("Счет: %1").arg(mTotalScore));
+
+        ui->logText->append(QString("game: Вы отгадали слово и заработали %1 баллов. Желаете продолжить? (Y or N)").arg(points));
+
+        mWaitingForContinue = true;
+        ui->wordInput->setEnabled(false);
+        ui->checkButton->setEnabled(false);
+    }
+    else if (mAttempts >= 5) {
+        ui->logText->append(QString("game: Попытки закончились, игра окончена. Ваш счет: %1 баллов").arg(mTotalScore));
+        endGame();
+    }
+}
+
+void Widget::endGame()
+{
+    saveScore();  
+
+    mTotalScore = 0;
+    ui->scoreLabel->setText("Счет: 0");
+
+    mGameActive = false;
+    ui->wordInput->setEnabled(false);
+    ui->checkButton->setEnabled(false);
+    loadRecords();
+}
