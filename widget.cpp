@@ -76,33 +76,36 @@ void Widget::saveScore()
     if (mTotalScore == 0) return;
 
     QFile file("scores.txt");
-    if (file.open(QIODevice::Append | QIODevice::Text)) {
+    if (file.open(QIODevice::Append | QIODevice::Text)) 
+    {
         QTextStream out(&file);
         out.setCodec("UTF-8");
-        out << QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss")
-            << " - " << mTotalScore << " баллов\n";
+        out << mTotalScore << "\n";
         file.close();
     }
 }
 
+
 void Widget::loadRecords()
 {
     ui->recordsList->clear();
-
     QVector<int> scores;
 
     QFile file("scores.txt");
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) 
+    {
         QTextStream in(&file);
         in.setCodec("UTF-8");
 
-        while (!in.atEnd()) {
-            QString line = in.readLine();
-            if (!line.isEmpty()) {
-                QStringList parts = line.split(" - ");
-                if (parts.size() == 2) {
-                    QString scoreStr = parts[1].split(" ")[0];
-                    int score = scoreStr.toInt();
+        while (!in.atEnd()) 
+        {
+            QString line = in.readLine().trimmed();
+            if (!line.isEmpty()) 
+            {
+                bool ok;
+                int score = line.toInt(&ok);
+                if (ok) 
+                {
                     scores.append(score);
                 }
             }
@@ -110,32 +113,23 @@ void Widget::loadRecords()
         file.close();
     }
 
-    // сортировка для рекордов убывание
-    for (int i = 0; i < scores.size() - 1; i++) {
-        for (int j = 0; j < scores.size() - i - 1; j++) {
-            if (scores[j] < scores[j + 1]) {
-                int tempScore = scores[j];
-                scores[j] = scores[j + 1];
-                scores[j + 1] = tempScore;
-            }
-        }
-    }
+    // убывание
+    std::sort(scores.begin(), scores.end(), std::greater<int>());
 
-    // отсеиваем 3 рекорда
-    if (scores.isEmpty()) {
+    // показываем топ-3
+    if (scores.isEmpty()) 
+    {
         ui->recordsList->addItem("Пока нет рекордов");
     } else {
-        int count = qMin(scores.size(), 3);  
-        for (int i = 0; i < count; i++) {
+        int count = qMin(scores.size(), 3);
+        for (int i = 0; i < count; i++) 
+        {
             QString place;
             if (i == 0) place = "1 место:";
             else if (i == 1) place = "2 место:";
             else if (i == 2) place = "3 место:";
-
-            QString record = QString("%1 %2 баллов")
-                                 .arg(place)
-                                 .arg(scores[i]);
-            ui->recordsList->addItem(record);
+            
+            ui->recordsList->addItem(QString("%1 %2 баллов").arg(place).arg(scores[i]));
         }
     }
 }
